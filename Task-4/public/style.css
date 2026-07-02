@@ -1,0 +1,118 @@
+body {
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+
+.card {
+    animation: fadeIn 0.8s ease-in-out;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgb(0, 0, 0, 0.3);
+}
+.card-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 15px 15px 0 0 !important;
+    padding: 30px;
+}
+
+.card-header h2 {
+    color: white;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    font-size: 1.8rem;
+}
+
+.card-body {
+    padding: 40px;
+    background: white;
+    border-radius: 0 0 15px 15px;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+.form-control:focus {
+    border-color:#667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    transform: translate(-2px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-top: 10px;
+}
+.btn-primary:hover {
+    transform: translate(-3px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+.error-text {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+.error-text {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(0);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0);
+    }
+}
+
+.success-card {
+    text-align: center;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.success-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.back-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.back-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
