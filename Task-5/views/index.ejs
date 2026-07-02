@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Cognifyz Task 5</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <div class="app-header">
+        <h1>📋 Task Manager</h1>
+        <p>Cognifyz Internship — Task 5 | Full Stack REST API</p>
+    </div>
+
+    <div class="container" style="max-width:750px; margin:0 auto;">
+
+        <div class="stats-bar">
+            <div class="stat"><span id="totalCount">0</span>Total</div>
+            <div class="stat"><span id="pendingCount">0</span>Pending</div>
+            <div class="stat"><span id="completedCount">0</span>Completed</div>
+        </div>
+
+        <div class="add-task-card">
+            <h3>➕ Add New Task</h3>
+            <input type="text" class="form-control" id="taskTitle" placeholder="Task title (required)">
+            <textarea class="form-control" id="taskDesc" placeholder="Description (optional)" rows="2"></textarea>
+            <select class="form-select" id="taskPriority">
+                <option value="low">🟢 Low Priority</option>
+                <option value="medium" selected>🟡 Medium Priority</option>
+                <option value="high">🔴 High Priority</option>
+            </select>
+            <button class="btn-add" onclick="addTask()">Add Task</button>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterTasks('all', this)">All</button>
+            <button class="filter-btn" onclick="filterTasks('pending', this)">Pending</button>
+            <button class="filter-btn" onclick="filterTasks('completed', this)">Completed</button>
+            <button class="filter-btn" onclick="filterTasks('high', this)">🔴 High</button>
+            <button class="filter-btn" onclick="filterTasks('medium', this)">🟡 Medium</button>
+            <button class="filter-btn" onclick="filterTasks('low', this)">🟢 Low</button>
+        </div>
+
+        <div class="tasks-container" id="tasksContainer">
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>No tasks yet. Add your first task above!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-box">
+            <h3>✏️ Edit Task</h3>
+            <input type="hidden" id="editTaskId">
+            <input type="text" class="form-control" id="editTitle" placeholder="Task title">
+            <textarea class="form-control" id="editDesc" placeholder="Description" rows="2"></textarea>
+            <select class="form-select" id="editPriority">
+                <option value="low">🟢 Low Priority</option>
+                <option value="medium">🟡 Medium Priority</option>
+                <option value="high">🔴 High Priority</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let allTasks = [];
+        let currentFilter = 'all';
+
+        async function loadTasks() {
+            const res = await fetch('/api/tasks');
+            allTasks = await res.json();
+            updateStats();
+            renderTasks();
+        }
+
+        async function addTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const description = document.getElementById('taskDesc').value.trim();
+            const priority = document.getElementById('taskPriority').value;
+
+            if (!title) {
+                showToast('Please enter a task title!', 'error');
+                return;
+            }
+
+            const res = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, priority })
+            });
+
+            const newTask = await res.json();
+            allTasks.push(newTask);
+
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('taskPriority').value = 'medium';
+
+            updateStats();
+            renderTasks();
+            showToast('Task added successfully!', 'success');
+        }
+
+        async function toggleComplete(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+    
+            task.completed = !task.completed;
+    
+            const res = await fetch(`/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: task.completed })
+            });
+    
+            if (res.ok) {
+                const updated = await res.json();
+                allTasks = allTasks.map(t => t.id === id ? updated : t);
+                updateStats();
+                renderTasks();
+                showToast(task.completed ? 'Task completed! ✅' : 'Task reopened!', 'success');
+            }
+        }
+
+        function openEdit(id) {
+            const task = allTasks.find(t => t.id === id);
+            document.getElementById('editTaskId').value = id;
+            document.getElementById('editTitle').value = task.title;
+            document.getElementById('editDesc').value = task.description;
+            document.getElementById('editPriority').value = task.priority;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        async function saveEdit() {
+            const id = parseInt(document.getElementById('editTaskId').value);
+            const title = document.getElementById('editTitle').value.trim();
+            const description = document.getElementById('editDesc').value.trim();
+            const priority = document.getElementById('editPriority').value;
+
+            if (!title) {
+                showToast('Title cannot be empty!', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, priority })
+                });
+
+                if (!res.ok) {
+                    showToast('Failed to update task!', 'error');
+                    return;
+                }
+
+                const updated = await res.json();
+                allTasks = allTasks.map(t => t.id === id ? updated : t);
+                closeModal();
+                updateStats();
+                renderTasks();
+                showToast('Task updated successfully!', 'success');
+            } catch (err) {
+                showToast('Something went wrong!', 'error');
+                console.error(err);
+            }
+        }
+
+        async function deleteTask(id) {
+            await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            allTasks = allTasks.filter(t => t.id !== id);
+            updateStats();
+            renderTasks();
+            showToast('Task deleted!', 'error');
+        }
+
+        function filterTasks(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            let filtered = allTasks;
+
+            if (currentFilter === 'pending') filtered = allTasks.filter(t => !t.completed);
+            else if (currentFilter === 'completed') filtered = allTasks.filter(t => t.completed);
+            else if (['high','medium','low'].includes(currentFilter)) {
+                filtered = allTasks.filter(t => t.priority === currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>No tasks found!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(task => `
+                <div class="task-card priority-${task.priority} ${task.completed ? 'completed' : ''}">
+                    <input type="checkbox" class="task-checkbox"
+                        ${task.completed ? 'checked' : ''}
+                        onchange="toggleComplete(${task.id})">
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                        <div class="task-meta">
+                            <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+                            <span class="task-date">📅 ${task.createdAt}</span>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-edit" onclick="openEdit(${task.id})">✏️ Edit</button>
+                        <button class="btn-delete" onclick="deleteTask(${task.id})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allTasks.length;
+            document.getElementById('pendingCount').textContent = allTasks.filter(t => !t.completed).length;
+            document.getElementById('completedCount').textContent = allTasks.filter(t => t.completed).length;
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        document.getElementById('taskTitle').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addTask();
+        });
+
+        loadTasks();
+    </script>
+</body>
+</html>
